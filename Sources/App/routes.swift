@@ -1,4 +1,5 @@
 import Vapor
+import Leaf
 import SwiftSocket
 
 /// Register your application's routes here.
@@ -8,11 +9,14 @@ public func routes(_ router: Router) throws {
         return "It works!"
     }
     
-    // Basic "Hello, world!" example
-    router.get("hello") { req -> String in
+    //  "Hello, Leaf!" example
+    router.get("hello") { req -> Future<View> in
+        return try req.view().render("hello", ["name": "Leaf"])
+    }
+    
+    //Testing connection to server port
+    router.get("setupvpn") { req -> String in
         
-//        let sm : SocketManager = SocketManager()
-//        sm.sendMessage(data: "expressvpn status")
         var pageMessage : String?
         
         let client = TCPClient(address: "192.168.1.222", port: 4201)
