@@ -4,9 +4,26 @@ import SwiftSocket
 
 /// Register your application's routes here.
 public func routes(_ router: Router) throws {
+    
     // Basic "It works" example
     router.get { req in
         return "It works!"
+     
+    }
+    
+    router.get("connections") { req -> Future<View> in
+        return Connection.query(on: req).all().flatMap { connections in
+            let data = ["connectionlist": connections]
+            return try req.view().render("connectionsview", data)
+        }
+    }
+    
+    router.post("connections") { req -> Future<Response> in
+        return try req.content.decode(Connection.self).flatMap { connection in
+            return connection.save(on: req).map { _ in
+                return req.redirect(to: "connections")
+            }
+        }
     }
     
     //  "Hello, Leaf!" example
