@@ -26,9 +26,9 @@ class SocketManager {
         self.socket = TCPClient(address: "192.168.1.22", port: 4201)
         // Connect the socket
         let result : Result
-        result = self.socket.connect(timeout: 1)
+        result = self.socket.connect(timeout: -1)
 
-        print("\(result.error) : \(result.isSuccess)")
+        print("\(result.error ) : \(result.isSuccess)")
         
     }
     
@@ -36,7 +36,7 @@ class SocketManager {
         
         DispatchQueue.global(qos: .background).async {
             let request = self.sendRequest(data: data, client: self.socket)
-            print("received message: \(request)")
+            print("received message: \(request ?? "No Message received")")
             DispatchQueue.main.async{ () -> Void in
                 print("This is run on the main queue, after the previous code in outer block")
             }
