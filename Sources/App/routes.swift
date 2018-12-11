@@ -2,6 +2,10 @@ import Vapor
 import Leaf
 import SwiftSocket
 
+struct VPNStatus : Content{
+    var status : String = ""
+}
+
 /// Register your application's routes here.
 public func routes(_ router: Router) throws {
     
@@ -9,6 +13,51 @@ public func routes(_ router: Router) throws {
     router.get { req in
         return "It works!"
      
+    }
+    
+    router.post("setvpnconnectionstate") { req -> Future<Response> in
+        return try req.content.decode(VPNStatus.self).map(to: Response.self){ vpnStatus in
+            print ("Status: \(vpnStatus.status)")
+            var status : String = ""
+            if vpnStatus.status == "on"{
+                status = "checked"
+            }
+            return req.redirect(to: "index")
+            
+        }
+    
+    }
+    
+    router.get("index") { req -> Future<View> in
+        
+        var status : String = ""
+        
+        let client = TCPClient(address: "192.168.1.222", port: 4201)
+        switch client.connect(timeout: 1) {
+        case .success:
+            switch client.send(string: "expressvpn status\n" ) {
+            case .success:
+                sleep(2)
+                guard let data = client.read(1024*10) else { client.close(); return try req.view().render ("index", ["status" : "checked"]) }
+                
+                if let response = String(bytes: data, encoding: .utf8) {
+                    print(response)
+                    if response.contains("Connected"){
+                        status = "checked"
+                    }
+                    
+                }
+            case .failure(let error):
+                print(error)
+            }
+            client.close()
+        case .failure(let error):
+            print(error)
+        }
+        
+        
+        
+        return try req.view().render ("index", ["status" : status])
     }
     
     router.get("connections") { req -> Future<View> in
