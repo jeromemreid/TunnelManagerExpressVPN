@@ -2,6 +2,7 @@ import Vapor
 import Leaf
 import SwiftSocket
 
+
 struct VPNStatus : Content{
     var status : String = ""
 }
@@ -18,17 +19,55 @@ public func routes(_ router: Router) throws {
     router.post("setvpnconnectionstate") { req -> Future<Response> in
         return try req.content.decode(VPNStatus.self).map(to: Response.self){ vpnStatus in
             print ("Status: \(vpnStatus.status)")
-            var status : String = ""
+            
+            var response : String = ""
+            
+            let client = VPNClient(connectedTo: "192.168.1.222", atPort: 4201)
+            
+            
             if vpnStatus.status == "on"{
-                status = "checked"
+                
+                
+                try _ = client.Send(message: "expressvpn disconnect\n", receiveResponse: &response, waitfor: 5)
+                print ("Response to Disconnect attempt: \(response)")
+                
             }
+            else{
+                try _ = client.Send(message: "expressvpn connect\n", receiveResponse: &response, waitfor: 5)
+                print ("Response to Connect attempt: \(response)")
+                
+            }
+            
+            client.closeConnection()
+            
             return req.redirect(to: "index")
             
         }
     
     }
-    
+  
     router.get("index") { req -> Future<View> in
+        
+        var status : String = ""
+        var response : String = ""
+        
+        
+        let client =  VPNClient(connectedTo: "192.168.1.222", atPort: 4201)
+        
+        try client.Send(message: "expressvpn status\n", receiveResponse: &response)
+        if response.contains ("Connected"){
+            status = "checked"
+        }
+        
+        client.closeConnection()                    
+                
+        
+        
+        return try req.view().render ("index", ["status" : status])
+    }
+    
+    
+/*    router.get("index") { req -> Future<View> in
         
         var status : String = ""
         
@@ -59,6 +98,7 @@ public func routes(_ router: Router) throws {
         
         return try req.view().render ("index", ["status" : status])
     }
+  */
     
     router.get("connections") { req -> Future<View> in
         return Connection.query(on: req).all().flatMap { connections in
